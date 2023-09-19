@@ -1,0 +1,181 @@
+city,region,year,tax_incentive,claims
+Bournemouth,Northland,2010,0,1667.4
+Bournemouth,Northland,2011,0,835.6
+Bournemouth,Northland,2012,0,1581.4
+Bournemouth,Northland,2013,0,835.7
+Bournemouth,Northland,2014,1,459.4
+Bournemouth,Northland,2015,1,488.4
+Bournemouth,Northland,2016,1,465.7
+Bournemouth,Northland,2017,1,472
+Bournemouth,Northland,2018,1,379.5
+Wellspring,Southland,2010,0,1152.7
+Wellspring,Southland,2011,0,782.7
+Wellspring,Southland,2012,0,1263.8
+Wellspring,Southland,2013,0,796.6
+Wellspring,Southland,2014,0,413.7
+Wellspring,Southland,2015,0,539
+Wellspring,Southland,2016,0,420.3
+Wellspring,Southland,2017,0,441.5
+Wellspring,Southland,2018,0,270.8
+Archensheen,Northland,2010,0,610.4
+Archensheen,Northland,2011,0,609.5
+Archensheen,Northland,2012,0,900.6
+Archensheen,Northland,2013,0,616
+Archensheen,Northland,2014,0,418.6
+Archensheen,Northland,2015,0,493.5
+Archensheen,Northland,2016,0,386.3
+Archensheen,Northland,2017,0,373.5
+Archensheen,Northland,2018,0,311.8
+Greenfield,Lower-end,2010,0,911.5
+Greenfield,Lower-end,2011,0,473.3
+Greenfield,Lower-end,2012,0,1022.2
+Greenfield,Lower-end,2013,0,597
+Greenfield,Lower-end,2014,0,300.6
+Greenfield,Lower-end,2015,0,416.2
+Greenfield,Lower-end,2016,0,336.8
+Greenfield,Lower-end,2017,0,233.5
+Greenfield,Lower-end,2018,0,171.9
+Queensville,Great Belt,2010,0,1830.9
+Queensville,Great Belt,2011,0,1008.9
+Queensville,Great Belt,2012,0,1215.9
+Queensville,Great Belt,2013,0,615.9
+Queensville,Great Belt,2014,0,639.9
+Queensville,Great Belt,2015,1,821.4
+Queensville,Great Belt,2016,1,540.9
+Queensville,Great Belt,2017,1,370.8
+Queensville,Great Belt,2018,1,289.7
+Newland,Great Belt,2010,0,1170.9
+Newland,Great Belt,2011,0,1314.9
+Newland,Great Belt,2012,0,1907.2
+Newland,Great Belt,2013,0,1720.7
+Newland,Great Belt,2014,1,1132.5
+Newland,Great Belt,2015,1,1124.6
+Newland,Great Belt,2016,1,950.6
+Newland,Great Belt,2017,1,1125
+Newland,Great Belt,2018,1,737
+Grayport,Lower-end,2010,0,1727.8
+Grayport,Lower-end,2011,0,1611.5
+Grayport,Lower-end,2012,0,3566.1
+Grayport,Lower-end,2013,0,2551.4
+Grayport,Lower-end,2014,1,1258.4
+Grayport,Lower-end,2015,1,1247.8
+Grayport,Lower-end,2016,1,1067.3
+Grayport,Lower-end,2017,1,959.3
+Grayport,Lower-end,2018,1,723.3
+Bay Pier,Northland,2010,0,1235.6
+Bay Pier,Northland,2011,0,840.3
+Bay Pier,Northland,2012,0,1217.3
+Bay Pier,Northland,2013,0,858.1
+Bay Pier,Northland,2014,0,831.8
+Bay Pier,Northland,2015,1,559.6
+Bay Pier,Northland,2016,1,686.5
+Bay Pier,Northland,2017,1,339
+Bay Pier,Northland,2018,1,191.9
+Glevendale,Lower-end,2010,0,1649.9
+Glevendale,Lower-end,2011,0,1395.9
+Glevendale,Lower-end,2012,0,2155.3
+Glevendale,Lower-end,2013,0,1480.6
+Glevendale,Lower-end,2014,0,1071
+Glevendale,Lower-end,2015,1,865.5
+Glevendale,Lower-end,2016,1,871.9
+Glevendale,Lower-end,2017,1,502.7
+Glevendale,Lower-end,2018,1,308.4
+Minetown,Lower-end,2010,0,5335.9
+Minetown,Lower-end,2011,0,4357.5
+Minetown,Lower-end,2012,0,6672
+Minetown,Lower-end,2013,0,5456.2
+Minetown,Lower-end,2014,0,3400.9
+Minetown,Lower-end,2015,0,3257.9
+Minetown,Lower-end,2016,0,3037.2
+Minetown,Lower-end,2017,0,2625.1
+Minetown,Lower-end,2018,0,2091
+Dark Meadow,Northland,2010,0,1697.4
+Dark Meadow,Northland,2011,0,959.6
+Dark Meadow,Northland,2012,0,1571.2
+Dark Meadow,Northland,2013,0,673.4
+Dark Meadow,Northland,2014,0,325.4
+Dark Meadow,Northland,2015,0,365.7
+Dark Meadow,Northland,2016,0,651.1
+Dark Meadow,Northland,2017,0,450
+Dark Meadow,Northland,2018,0,299.1
+Park City,Great Belt,2010,0,743
+Park City,Great Belt,2011,0,593.2
+Park City,Great Belt,2012,0,1309.6
+Park City,Great Belt,2013,0,975.6
+Park City,Great Belt,2014,0,581.5
+Park City,Great Belt,2015,0,865.8
+Park City,Great Belt,2016,0,694
+Park City,Great Belt,2017,0,531.6
+Park City,Great Belt,2018,0,405.4
+Newport,Great Belt,2010,0,494.9
+Newport,Great Belt,2011,0,406
+Newport,Great Belt,2012,0,606.8
+Newport,Great Belt,2013,0,494.2
+Newport,Great Belt,2014,0,380.7
+Newport,Great Belt,2015,0,258.6
+Newport,Great Belt,2016,0,236.4
+Newport,Great Belt,2017,0,186.6
+Newport,Great Belt,2018,0,123.6
+Old Bredon,Great Belt,2010,0,484.9
+Old Bredon,Great Belt,2011,0,344.8
+Old Bredon,Great Belt,2012,0,462.2
+Old Bredon,Great Belt,2013,0,341.5
+Old Bredon,Great Belt,2014,0,443.8
+Old Bredon,Great Belt,2015,1,250
+Old Bredon,Great Belt,2016,1,211
+Old Bredon,Great Belt,2017,1,169.1
+Old Bredon,Great Belt,2018,1,140.9
+Bellenau,Northland,2010,0,1784
+Bellenau,Northland,2011,0,1148.4
+Bellenau,Northland,2012,0,2106.4
+Bellenau,Northland,2013,0,1674.2
+Bellenau,Northland,2014,0,1314.4
+Bellenau,Northland,2015,0,985.1
+Bellenau,Northland,2016,0,1274.9
+Bellenau,Northland,2017,0,689.3
+Bellenau,Northland,2018,0,356.8
+Far Water,Lower-end,2010,0,694.1
+Far Water,Lower-end,2011,0,514.1
+Far Water,Lower-end,2012,0,818.9
+Far Water,Lower-end,2013,0,683.5
+Far Water,Lower-end,2014,1,419.2
+Far Water,Lower-end,2015,1,359.1
+Far Water,Lower-end,2016,1,416.7
+Far Water,Lower-end,2017,1,266.8
+Far Water,Lower-end,2018,1,187.4
+Rivertown,Southland,2010,0,1131.7
+Rivertown,Southland,2011,0,975.6
+Rivertown,Southland,2012,0,1314.9
+Rivertown,Southland,2013,0,865.2
+Rivertown,Southland,2014,0,563.3
+Rivertown,Southland,2015,0,598.6
+Rivertown,Southland,2016,0,536.2
+Rivertown,Southland,2017,0,479.7
+Rivertown,Southland,2018,0,362.4
+Smallville,Southland,2010,0,1298.8
+Smallville,Southland,2011,0,790.5
+Smallville,Southland,2012,0,1414.7
+Smallville,Southland,2013,0,1101.5
+Smallville,Southland,2014,0,957
+Smallville,Southland,2015,0,687.8
+Smallville,Southland,2016,0,1005.7
+Smallville,Southland,2017,0,501.1
+Smallville,Southland,2018,0,253.7
+Wakefield,Southland,2010,0,809.3
+Wakefield,Southland,2011,0,571.5
+Wakefield,Southland,2012,0,866.5
+Wakefield,Southland,2013,0,618.9
+Wakefield,Southland,2014,1,438.4
+Wakefield,Southland,2015,1,421.7
+Wakefield,Southland,2016,1,434.9
+Wakefield,Southland,2017,1,290.5
+Wakefield,Southland,2018,1,252.6
+Stathford,Southland,2010,0,2119.9
+Stathford,Southland,2011,0,1401.4
+Stathford,Southland,2012,0,1844.4
+Stathford,Southland,2013,0,1330
+Stathford,Southland,2014,1,932.3
+Stathford,Southland,2015,1,980.5
+Stathford,Southland,2016,1,847
+Stathford,Southland,2017,1,636.6
+Stathford,Southland,2018,1,590.9

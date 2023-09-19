@@ -1,0 +1,333 @@
+---
+title: "Assignment 1 - The Potential Outcomes Framework and DAGs"
+author: "219744"
+date: "`r format(Sys.time(), '%B %d, %Y | %H:%M:%S | %Z')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    number_sections: no
+    theme: cosmo
+    toc: no
+  pdf_document:
+    toc: no
+---
+  
+<style>
+div.answer {background-color:#f3f0ff; border-radius: 5px; padding: 20px;}
+</style>
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      error = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      comment = NA)
+```
+
+```{r, include=FALSE}
+# Custom function to install needed packages, if they're not
+# already installed on your machine
+check.packages <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg))
+    install.packages(new.pkg, dependencies = TRUE,
+                     repos = "https://cran.rstudio.com")
+  sapply(pkg, require, character.only = TRUE)
+}
+
+check.packages(c("tidyverse", "ggdag", "dagitty"))
+```
+
+
+<!-- Do not forget to input your Github username in the YAML configuration up there --> 
+
+***
+
+```{r, include=F}
+# YOU CAN ALSO LOAD THE PACKAGES YOU ARE USING IN THIS CODE CHUNK library(nameofpackage)
+library(foreign)
+library(tidyverse)
+library(dplyr)
+library(haven)
+library(ggplot2) 
+library(ggdag)
+```
+
+### Task 1 - The Potential Outcomes Framework [7 points in total]
+
+A research group is interested in the effects of coffee on the average performance of students. The researchers asked 200 of their students whether they had consumed coffee before the exam.  
+
+After compiling the data, they claim that **drinking coffee before an exam leads to an average increase of 7 points in the students' grade.** 
+
+You are a bit skeptical of the results. Fortunately for you, in this reality, you can observe the potential outcomes of 200 students under the two states of interest. In other words, you have data for the expected scores of students when they drink coffee before the exam $(coffee=1)$, as well as when they do not drink coffee before the exam $(coffee=0)$.
+
+| Treatment state (D)  | Share of students | E($Y^1$) | E($Y^0$) |
+|----------------------|:-----------------:|:------:|--------|
+| Treatment (Coffee=1) |        50%        |   95   |   93   |
+| Control (Coffee=0)   |        50%        |   92   |   88   |
+
+
+a)  Using `R` as a calculator, find the:
+
+- Naive average treatment effect (NATE) [0.5 points]
+```{r}
+
+ NATE = 95 - 88 
+NATE
+```
+
+- Average treatment effect (ATE) [0.5 points]
+```{r}
+ATE= (0.5*95) + (0.5*92) - (0.5*93)-(0.5*88)
+ATE
+```
+
+ 
+- Average treatment effect for the treated (ATT) [0.5 points]
+```{r}
+ ATT= 95-93
+ATT
+```
+
+ 
+- Average treatment effect for the control (ATC) [0.5 points]
+```{r}
+ATC= 92- 88
+ATC
+```
+  
+  
+- Selection, or baseline, bias [1 point]
+```{r}
+baseline_bias = 93- 88
+baseline_bias
+```
+
+- Differential treatment effect, or heterogeneous treatment effect, bias [2 points]
+```{r}
+dif_treatment= 0.5*((95-93)-(92-88))
+dif_treatment
+```
+
+b) Discuss whether in a world with complete information about the potential outcomes your conclusions differ from those of the research team. [2 points]
+
+<!-- DO NOT FORGET PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+ There is a difference between the NATE that would be the value that the researchers found and what the results show because we can observe the potential outcomes (ATE). So the research team overestimated the effect of drinking coffee in students’ grades by 4 points (NATE-ATE=7-3), mainly because of the impact of the selection bias that represents 5 points, which implies that there is a possibility that the students selected have background factors that can lead to a better outcome than the others.
+
+</div>
+
+---
+
+### Task 2 - Bringing it all together [8 points in total]
+
+A research group is interested in the effects that receiving a **private high school education** has on the students' **earnings**. 
+
+The researchers gathered the incomes for the 2020 tax-year of all 4000 high school gradutes of 2010 in the city of Shelbyville. They researchers claim that **attending a private high school results in an average increase of around €7400 of the yearly income of students.** 
+
+You are a bit skeptical of the results. Fortunately, you can observe the potential outcomes of 4000 students under the two states of interest. In other words, you have data for the expected incomes of students in a reality where they went to private school $(private=1)$, as well as one where they attended a public institution $(private=0)$.
+
+The data\footnote{These are simulated data.} are stored in the `earnings_df.dta` file and contain the following information:
+
+* `subject_id`: identification number for each student
+* `treatment_state`: binary marker for actual treatment state
+* `income_0`: potential income under (private=0)
+* `income_1`: potential income under (private=1)
+* `observed_income`: income observed in reality
+
+Complete the following tasks utilizing the `earnings_df.dta` and your newly attained data manipulation skills with `dplyr`:
+
+a)  Load the `earnings_df.dta` into an object called `earnings_df`. [0.5 points]
+
+```{r}
+ earnings_df <- read_dta("earnings_df.dta")
+earnings_df
+```  
+
+b)  Extract the following quantities of interest with `dplyr` functions. If the output is more than a single number, provide the first ten elements:
+
+  - Individual treatment effects (ITEs) [0.5 points]
+  
+```{r}
+
+earnings_df %>% 
+  dplyr::mutate(ITE = income_1 - income_0)
+
+
+```  
+  
+  - Average treatment effect (ATE) [0.5 points]
+  $$ATE = E(Y_{1i}) - E(Y_{0i})$$
+```{r}
+earnings_df %>%
+  dplyr::mutate(ITE = income_1 - income_0) %>%
+  dplyr::summarize(ATE = mean(ITE)) 
+```
+
+  - Average treatment effect for the treated (ATT) [0.5 points]
+  $$ATT = E(Y_{1i}-Y_{0i} | D = 1)$$
+```{r}
+earnings_df %>%
+  dplyr::mutate(ITE = income_1 - income_0) %>%
+  dplyr::filter(treatment_state == "1") %>%
+  dplyr::summarize(ATT = mean(ITE)) 
+
+```
+
+  - Average treatment effect for the control (ATC) [0.5 points]
+    $$ATC = E(Y_{1i}-Y_{0i} | D = 0)$$
+```{r}
+earnings_df %>%
+  dplyr::mutate(ITE = income_1 - income_0) %>%
+  dplyr::filter(treatment_state == "0") %>%
+  dplyr::summarize(ATC = mean(ITE)) 
+```  
+  
+  - Naive average treatment effect (NATE) [0.5 point]
+  $$NATE = E(Y_{1i}|D{i}=1) - E(Y_{0i}|D{i}=0)$$
+```{r}
+earnings_df %>%
+  dplyr::mutate(observed_prej = ifelse(treatment_state == 1, income_1, income_0)) %>%
+  dplyr::group_by(treatment_state) %>%
+  dplyr::summarize(NATE = mean(observed_prej)) 
+25924.96 - 18517.94
+```
+
+
+  - Selection, or baseline, bias [1 point]
+  
+```{r}
+earnings_df%>%
+  group_by(treatment_state)%>%
+  summarize(baselines = mean(income_1))
+
+21962.46 - 18517.94
+
+```
+
+  - Differential treatment effect, or heterogeneous treatment effect, bias [1 points]
+
+```{r}
+earnings_df%>%
+  dplyr::mutate(ITE = income_1 - income_0) %>%
+  group_by(treatment_state)%>%
+  summarize(treatment_effects = mean(ITE))
+
+#(ATT-ATU)(1-p)
+
+
+(3962.496 - 4465.371 )* (3000/4000)
+```
+
+
+c) Discuss whether in a world with complete information about the potential outcomes your conclusions differ from those of the research team. [1 point]
+
+<!-- DO NOT FORGET PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+After the analysis is possible to conclude that the result found by the researchers overestimated the actual effect of the treatment by €3067, 39 (NATE-ATE). The impact of the selection bias could mainly explain that, and on a low proportion, the differential treatment effect bias. The first bias can imply that the students who attend private high school have other factors such as family background that can influence the level of future income of the students. Moreover, the difference in the individuals' characteristics between them and the general population understood as a pre-treatment bias reflected on the result of the differential treatment effect
+
+</div> 
+
+
+d) Develop an alternative theory about the observed differences between private and public school students' incomes. Write a short paragraph about what you suspect can be behind the observed results and formalize your assumptions in a Directed Acyclic Graph (DAG). [2 points] 
+
+<!-- DO NOT FORGET PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+There is a direct relationship between the type of schools and students’ income, being positive if the student comes from a private school. However, behind a student´s school comes the parents’ decision. In general, parents will want the best for their children, especially in terms of education, and that is why they try to decide considering their restrictions and rationally thinking what they think is the best for their children´s education, which is mainly explained by two factors their ability to pay (parent´s income level) and the prestigious of the school meaning how popular and qualify it is (school´s popularity). Both of them are influenced by another factor: parents´ education level, which directly influences the level of income and the school quality because the school choice is made by families and parents use their knowledge, skill, and social connections to enroll their  children  in  school. Sometimes parents financially sacrifice and decide to send their children to private school.
+
+</div> 
+
+
+```{r}
+
+
+student_income_dag <- ggdag::dagify(Income ~ type_school,
+                                type_school ~ parents_inc + school_popularity,
+                                parents_inc ~ parents_ch,
+                                school_popularity~ parents_ch,
+                                labels = c("Income" = "Student\n Income", 
+                                           "type_school" = "Type of\n school",
+                                           "parents_inc" = "Parent´s \n income level",
+                                           "school_popularity" = "School\n Popularity",
+                                           "parents_ch" = "Parent´s \n choice"),
+                                latent = "parents_ch",
+                                exposure = "type_school",
+                                outcome = "Income")
+
+ggdag::ggdag(student_income_dag, # the dag object we created
+             text = FALSE, # this means the original names won't be shown
+             use_labels = "label") + # instead use the new names
+  theme_void()
+
+```  
+
+
+---
+
+### Task 3 - Confounders [3 points in total]
+
+```{r, echo = F, out.width="80%", fig.align="center"}
+knitr::include_graphics("https://user-images.githubusercontent.com/54796579/155166908-5751768c-091e-4da8-a1d9-d65f93421bf0.png") #this chunk is just to upload the image we provided
+```
+
+The scatterplot shows the relationship between the average weight and daily sleep of 1000 pets. An online site is using this plot to advertise their new supplement, *Life - Survival Shield X-2*. The owner of the site, Alex, claims that the supplement can help owners manage the weight of the pets by controling their sleep cycle. 
+
+a) Load the `animals_df.csv` into an object called `animals_df` and present a similar scatterplot with an additional dimension — `animal` — as the color argument in `ggplot2` Make sure the graph is easy to read by formatting it nicely. [1 point]
+
+```{r, fig.align="center", message=F, warning=F}
+ animals_df <- read_csv("animals_df.csv", show_col_types = FALSE)
+
+ggplot(animals_df, aes(x = weight, y = daily_sleep, color = as.factor(animal))) +
+  geom_point( alpha = 0.5) +
+  geom_smooth(method = "lm", se = F) +
+  theme_minimal() +
+  labs(x = "Average weight",
+       y = "Daily sleep (hours)",
+       color = "Animal") +
+  theme(legend.position = "bottom")
+
+```
+
+b) Provide a brief explanation of how this relationship may be subject to **omitted variable bias** and lay it out in DAG form with `ggdag`. [2 points]
+
+<!-- DO NOT FORGET PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+The relationship between average weight of a pet and a daily sleep hour without any control for type of animal, seems to be negative which means, the fatter the pet it sleeps less hours which can implies that overweight on animals have a negative impact on the hours of sleep. However, this fails to be true, when controlled by the confounder “type of animal” because the initial sample wasn´t make difference of the type of animal who biological require different hours of sleep despite their weight.
+
+</div>
+
+```{r}
+coord_dag <- list(
+  x = c(d = 0, x = 1, y = 2),
+  y = c(d = 0, x = 1, y = 0)
+)
+
+animal_dag <- ggdag::dagify(d ~ x,
+                         y ~ d,
+                         y ~ x,
+                         coords = coord_dag,
+                                labels = c("x" = "Average \n weight", 
+                                           "y" = "Daily sleep of\n (hours)",
+                                           "d" = "Type of \n animal"))
+ggdag::ggdag(animal_dag, # the dag object we created
+             text = FALSE, # this means the original names won't be shown
+             use_labels = "label") + # instead use the new names
+  theme_void()
+
+
+```
+
+---
+
+### Task 4 - Statistics inspired meme [1 bonus percentage point]
+
+a)  Create a stats-inspired meme using `memer` (or any other R meme dedicated  package) to earn one bonus percentage point. The meme should be related to one of the topics covered in the sessions this assignment is based on.
+
+```{r}
+library (meme)
+meme_graph <- system.file("success.jpg", package="meme")
+meme(meme_graph, "Stats assignment ", "I did it!")
+```

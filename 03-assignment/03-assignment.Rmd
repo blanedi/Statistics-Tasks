@@ -1,0 +1,441 @@
+---
+title: "Assignment 3 - Instrumental Variables and Regression Discontinuity Designs"
+author: "219744"
+date: "`r format(Sys.time(), '%B %d, %Y | %H:%M:%S | %Z')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    number_sections: no
+    theme: cosmo
+    toc: no
+---  
+  
+<style>
+div.answer {background-color:#f3f0ff; border-radius: 5px; padding: 20px;}
+</style>
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      error = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      comment = NA)
+```
+
+<!-- Do not forget to input your Hertie student ID in the YAML configuration up there --> 
+
+***
+
+```{r, include=F}
+# YOU CAN ALSO LOAD THE PACKAGES YOU ARE USING IN THIS CODE CHUNK library(nameofpackage)
+library(tidyverse)
+library(haven)
+library(dplyr) # for data wrangling
+library(ggplot2) # for creating plots
+library(rdrobust) # for rdrobust()
+library(readr) # for loading the .csv data
+library(rdd) # McCrary density test
+library(rddensity) # for McCrary density test
+library(modelsummary)
+library(kableExtra)
+library(gt)
+```
+
+### General guidelines
+
+- The expected submission output is an HTML file. Only HTML submissions will be graded.
+- Include all your text-based answers inside the `<div class = "answer">` tags. Failing to do so will result in point deductions.
+- Avoid printing unnecessary output, such as complete data frames. This will result in point deductions.
+- Make sure that you explicitly point to the estimand you are being asked for. For instance, if your model reports estimates of multiple parameters, select or highlight the one(s) you are asked to report in the output, or report it separately in the answer box.
+- Regression output should be presented in a report-worthy format, for example a well-formatted HTML table. There will be deductions if the results are presented as text console output (this includes `stargazer::stargazer(., type = "text")` and `texreg::texreg()`).
+- Round to no more than two decimal points (e.g., 0.60 instead of 0.595). 
+
+---
+
+### Task 1 - Bert and Ernie's impact on letter recognition [9 points in total]
+
+```{r echo = F, fig.align="center", out.width="50%"}
+knitr::include_graphics("https://user-images.githubusercontent.com/54796579/160391942-0fc8b79b-a0e2-47d4-99f6-2d134974727c.png")
+```
+
+Suppose we want to estimate the effect of watching the educational television program **Sesame Street** on letter recognition for preschool children. 
+
+We considered implementing a randomized experiment where we assign children to the treatment (i.e., watching Sesame Street). As researchers, we realize that it is not possible, perhaps also unethical, for us to force children to watch a TV show or to refrain from watching it.
+
+We decided to implement an encouragement design. The results are in the `sesame_df.dta` dataset:
+
+- `id`: a numeric variable with the individual pre-schooler id
+- `age`: a numeric variable with the age of the pre-schooler in months
+- `encour`: a binary marker of the encouragement to watch Sesame Street
+- `watched`: a binary marker of the treatment (the child watching Sesame Street)
+- `reading_score`: a numeric variable with your outcome of interest, the reading score (based on a letter recognition task)
+
+With these data, do the following:
+
+a) Provide a naïve estimate of watching on letter recognition, ignoring the encouragement mechanism. Provide a technical (not causal) interpretation of the estimated coefficient. [1 point]
+
+```{r}
+sesame_df <- read_dta("sesame_df.dta")
+model_1<- lm(reading_score ~ watched, data = sesame_df)
+modelsummary(model_1,
+  gof_omit = ".*",
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE, output = "html")
+
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+As the table above shows that if a kid watched sesame street there will be a significant and positive impact on their reading score by 12.689 units.
+</div>
+
+<br>
+
+b) Illustrate visually the observed differences in the outcome of interest - in terms of the entire distributional form, the mean, and the median - between the `watched = 1` and the `watched = 0` groups. [2 points]
+
+```{r}
+med_readingsc <- sesame_df %>%
+  group_by(watched) %>%
+  summarize(median=median(reading_score))
+
+mean_readingsc <- sesame_df %>%
+  group_by(watched) %>%
+  summarize(mean=mean(reading_score))
+
+ggplot(sesame_df, aes(x = reading_score, fill = factor(watched))) + 
+  geom_density(alpha = 0.5) + 
+  scale_fill_manual(name = " ", # changes to fill dimension
+                     values = c("#a7a8aa", "#cc0055"),
+                     labels = c("Control", "Treatment")) +
+geom_vline(data = med_readingsc, aes(xintercept = median, 
+                                       color = "#a7a8aa"),linetype = "longdash", size=0.8)+
+  geom_vline(data = mean_readingsc, aes(xintercept = mean, 
+                                       color = "#cc0055" ),linetype = "longdash", size=0.8)+ scale_color_manual(
+  values = c("#cc0055", "#a7a8aa"),
+  labels = c("mean", "median")
+)+
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Distribution of letter recognition for preschool children",
+       x = "Reading score",
+       y = "Density")
+
+```
+
+<br>
+
+c) Discuss the assumptions needed for the experimental encouragement to work as an instrument for watching the show (not just generally, but applied to the specific case) and describe potential violations of these assumptions. [2 points]
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The experimental encouragement in order to work as a instrument must follow this assumptions:relevant, meaning the encouragement must affect the willingness of a kid to watch sesame street; exogeneity/ignorability of the instrument, the encouragement must be independent of the reading score of a kid and any other potential treatment; exclusion/restriction, the encouragement only affect the reading score result of the kid through watching sesame street; and finally monotonicity which implies that every kid is affected in the same level by the encouragement(instrument) and if these hold the estimate among compliers will be consistent.
+</div>
+
+<br>
+
+d) What do we know about non-compliance in the data? Provide descriptive evidence (table or plot) plus a short verbal description. [1 point]
+
+```{r}
+sesame_df %>% # your data frame
+  janitor::tabyl(watched, encour) %>% # the two dimensions for the table (D, Z)
+  janitor::adorn_totals(c("row", "col")) %>% # add totals for rows and cols
+  knitr::kable() %>% # turn into a kable table for nice rendering in HTML
+  kableExtra::kable_styling() %>% 
+  kableExtra::add_header_above(c("Watched sesame street", "encourage" = 2, "")) 
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The non-compliers in this table are much more less than compliers. It shows than two groups: always-taker and the never-takers, the first one are 48 kids and the other are 14 kids, that sum up to 62 kids (25,8%) that won´t do what they are told in the experiment environment.
+</div>
+
+<br>
+
+e) Report a statistic showing whether the encouragement can or cannot be considered a strong instrument. [1 point]
+
+```{r}
+model_2<- lm(watched ~ encour, data = sesame_df)
+ modelsummary(model_2,stars=TRUE, escape = FALSE, output="html")
+
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+From the regression above , it is plausible to say that the encouragement is a strong instrument because the F-statistic is 50.464 which is greater than 10 conventionally consider by economist for the case of a single endogenous regressor to be considered a strong instrument.
+</div>
+
+<br>
+
+f) Provide an estimate for the **Intent to Treat effect (ITT)** and give a brief substantive interpretation to the coefficients rendered [1 point]
+
+```{r}
+itt_model <- lm(reading_score ~ encour, data = sesame_df)
+
+modelsummary(itt_model,
+ statistic = c("conf.int","s.e. = {std.error}","p = {p.value}" ),stars = TRUE,output = "html")
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The regression sustain that the encouragement affect 2.876 units the reading score but doesn´t have a significant impact in the outcome ( reading score) because the p-value is greater than 0.05. Additionally, the R2  is very low, even though it could be consider as a strong instrument as it proved in e) section. 
+</div>
+
+<br>
+
+g) Provide an estimate for the **Local Average Treatment Effect (LATE)** and give a brief substantive interpretation to the coefficients rendered [1 point]
+
+```{r}
+late_model <- AER::ivreg(reading_score ~ watched | encour, data = sesame_df)
+modelsummary(late_model,
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE,output = "html")
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The regression shows that the effect of "watch sesame street" on kids is not significant at 95% of confidence on the reading score. Only at 90% of confidence watched sesame street affect on 7.934 units the reading score. Finally, the result of kids watched sesame considering the encouragement in their reading score is not strong at the first neither at the second stage which that the instrument has only a very small correlation with the treatment, therefore, we can’t learn much about the treatment from the instrument. Moreover the treatment itself is not relevant enough to the outcome.
+</div>
+
+<br>
+
+
+---
+
+### Task 2 - Effects of a pre- and post-natal health care policy [12 points in total]
+
+The dataset `hospitals.tsv` provides data collected on women who gave birth at any one of several hospitals in disadvantaged neighborhoods in New York. These data are used to evaluate the effect of a government policy that makes available pre- and post-natal health care for pregnant women, new mothers, and their children, who meet certain income eligibility requirements. **To receive services, the income of these women has to have been below $20,000 at the time they gave birth**. The general question of interest is whether this program increases a measure of child health at age 3. Here is a short description of the data:
+  
+- `incomeR:` Reported household income in thousands
+- `health:` A numeric health score
+- `program:` A binary program marker
+
+With these data, perform the following tasks:
+
+a) Provide a visual check and a brief interpretation of what you see! Does it make sense to employ a sharp RD in this case? [1 point]
+
+```{r}
+hospitals <- read_tsv("hospitals.tsv", show_col_types = FALSE)
+ggplot(hospitals, aes(x =incomeR , 
+                 y = program, 
+                 color = factor(program))) +
+  geom_point() + 
+  labs(x = "Income household (thousands $)", 
+       y = "Program Probability") +
+  scale_color_discrete(name = " ", 
+                       labels = c("No Treatment ", "Treatment")) +
+  geom_vline(xintercept = 20, linetype = "dotted") + 
+  theme_minimal()
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+From the graph above we can see that at the 20 thousand dollars threshold, the women are consider into the program which would make income household a viable forcing variable for a sharp-RDD set-up.
+</div>
+
+<br>
+
+b) Create a scatterplot of reported income versus health status. Plot <b style="color:#ff990d;">treated</b> observations in <b style="color:#ff990d;">#ff990d (orange)</b> and <b style="color:#a7a8aa;">controls</b> in <span style="color:#a7a8aa;"> #a7a8aa (light gray)</span>. **Keep this convention for future plots in this task.** [1 point]
+
+```{r}
+ggplot(hospitals, aes(x =incomeR , 
+                 y = health, 
+                 color = factor(program))) +
+  geom_point() + 
+  labs(x = "Income household (thousands $)", 
+       y = "Numeric health score") +
+   scale_color_manual(name="Conditional program",values=c("#a7a8aa", "#ff990d"), 
+                       labels = c("No treatment", "Treatment"))+
+  geom_vline(xintercept = 20, linetype = "dotted") + 
+  theme_minimal()
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+From the graph above is possible to see that $20 thousand is in fact cutting off the distribution of the treatment. This would make household income a viable forcing variable for a sharp-RDD set-up as mention in letter a).
+</div>
+
+<br>
+
+c) Calculate a naïve estimate of the effect of the program by running a regression of health on the indicator for program participation. What is the estimate, and why is it naïve? [1 point] 
+
+```{r}
+
+naive_model <- lm(health ~ program , data = hospitals)
+modelsummary(naive_model,
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "p = {p.value}"),stars = TRUE,output = "html")
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The regression above show that being part of the program affect negatively and significative the numeric health score of the person, however this estimate is naive because it implies that the mean ignorability of treatment assignment assumption is fulfilled. 
+</div>
+
+<br>
+
+d) Cut down the dataset to a sample containing only the units within **± $2800** from the threshold, and then estimate the LATE at the threshold using a **linear model with common slopes** with `lm()`. Provide a plot in which you show the fitted curves and the underlying scatterplot of the data. **Interpret your estimate.** [2 points]
+
+```{r}
+attach(hospitals)
+newhospital <- hospitals[ which(incomeR >=20-2.8 & incomeR <=20+2.8),]
+
+linear_model <- lm(health ~ program + incomeR, data = newhospital)
+
+modelsummary(linear_model,
+ statistic = c("conf.int",  "s.e. = {std.error}", 
+                           "p = {p.value}"),stars = TRUE,output = "html")
+
+newhospital$yhat <- predict(linear_model) 
+
+linear_plot <- newhospital %>% # for this plot make sure to put the df outside the 
+  ggplot(aes(x = incomeR,  
+             y = yhat, # notice here the predicted y
+             col = factor(program))) +
+  geom_point(aes(x = incomeR, 
+                 y = health ,# notice here the actual outcome
+                 col = factor(program))) +
+  geom_vline(xintercept = 20, linetype = "dotted") +
+  labs(title = "Linear model with common slope",
+       x = "Forcing variable (Household income -thousand $)",
+       y = "Health score") +
+  geom_line(data = newhospital[newhospital$program >= 0,], 
+            color = "#ff990d", # color lines
+            size = 1) +
+  geom_line(data = newhospital[newhospital$program < 0,], 
+            color = "#a7a8aa",# color lines
+            size = 1) +
+  scale_color_manual(name = "",
+                     values = c("#a7a8aa", "#ff990d"),
+                     labels = c("Control", "Treatment")) + 
+  theme_minimal()
+
+linear_plot
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+In "Model 1" the first assumption that we take in consideration is that the effect of being part of the program does not depend on the forcing threshold of the household income. Considering this condition the result shows that we can expect 1.290 units increase in the health score for people with a household income below 20 thousand dollars. Moreover, for every thousand dollar extra the expected health score increase in 0.283 units.
+</div>
+
+<br>
+
+e) Conduct the same analysis as in part (d) except that you now use a quadratic model with different model coefficients for the treated and control groups. **Interpret your estimate.** [2 points]
+
+```{r}
+quadratic_model <- lm(health ~ incomeR + 
+                  I(incomeR^2) + 
+                  program + 
+                  I(incomeR * program) + 
+                  I((incomeR^2) * program),
+                data = newhospital)
+modelsummary(quadratic_model,   gof_omit = ".*",
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE,output = "html")
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The regression above is a quadratic model that implies that shows that the effect of being part of the program can vary along the household income. Considering that we can infer that those who earn below than $20 thousand will reduce their health score by -59.289 in this new small set of observations however this results are not significative therefore is there is not real effect on the health score at least in the small dataset.
+</div>
+ 
+<br>
+
+f) Now estimate, **with the full dataset**, the LATE at the threshold using a local linear regression with `rdrobust::rdrobust()`. Use the defaults (`kernel = "tri"` and `bwselect = mserd`). **Interpret your estimate.** [2 points]
+
+```{r}
+llr <- rdrobust::rdrobust(hospitals$health, 
+                          hospitals$incomeR,  
+                          c = 20,
+                          kernel = "tri",
+                          bwselect = "mserd",
+                          p = 1)
+summary(llr)
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+Considering now the whole dataset, the result above tell us that that based on calculation that the result on the health score will be -1.192 units for the person whose household income is below 20 thousand.
+</div>
+
+<br>
+
+g) A colleague now points out to you that some women may have incentives in these settings to misreport their actual income. Plot a histogram of reported income and look for anything that might support or refute such a claim. What assumption is called into question if women are truly misreporting in this manner? [2 points]
+
+```{r}
+ggplot(hospitals, 
+       aes(x = incomeR)) +
+  geom_histogram(fill = "#cc0055") +
+  labs(title = "Income distribution",
+       x = "Household Income",
+       y = "Number of respondents") +
+  geom_vline(xintercept = 20, linetype = "dotted") +
+  theme_minimal()
+
+hospitals %>% 
+  dplyr::filter(dplyr::between(incomeR, 19, 21)) %>% #filter values between 19000 and 21000
+  dplyr::group_by(program) %>%
+  dplyr::summarize(n = n()) %>%
+  knitr::kable() %>%
+  kableExtra::kable_styling()
+binom.test(48, 216, p = 0.5) 
+
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The histogram shows that there could be a possibility that people where trying to sort it out just before the cut-off as your colleague points out. To clarify these the result of the binomial test prove that indeed the observed distribution do deviate from expected distribution of observations into the two categories , so the units just around the threshold doesn´t end up on either group by chance. In other words, there is evidence of sorting because the p-value is less than 0.05.
+</div>
+
+<br>
+
+h) Another colleague points out to you that several other government programs (including food stamps, etc.) have the same income threshold for eligibility. How might this knowledge impact your interpretation of your results? [1 point]
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The statement of the colleague validate the results of part g) because due to the amount of government programs and potential benefits people are sorting themselves before the household income cut-off to become beneficiaries of these programs.
+</div>
+
+---
+
+### Task 3 - Statistics inspired meme [1 bonus percentage point]
+
+Create a stats-inspired meme using `memer` (or any other R meme dedicated  package) to earn one bonus percentage point. The meme should be related to one of the topics covered in the sessions this assignment is based on.
+
+```{r}
+library (meme)
+angry_mem <- system.file("angry8.jpg", package="meme")
+ac<- meme(angry_mem, "Instrument is valid but weak", "R-frustation")
+
+ac + list(upper = "Instrument is valid but weak", 
+        lower = "R-frustation", font = "Courier", size=2)
+```

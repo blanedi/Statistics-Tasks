@@ -1,0 +1,364 @@
+---
+title: "Assignment 4 - Difference-in-differences, panel data, and fixed effects"
+author: "219744"
+date: "`r format(Sys.time(), '%B %d, %Y | %H:%M:%S | %Z')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    number_sections: no
+    theme: cosmo
+    toc: no
+---  
+  
+<style>
+div.answer {background-color:#f3f0ff; border-radius: 5px; padding: 20px;}
+</style>
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      error = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      comment = NA)
+```
+
+<!-- Do not forget to input your Hertie student ID in the YAML configuration up there --> 
+
+***
+
+```{r, include=F}
+# YOU CAN ALSO LOAD THE PACKAGES YOU ARE USING IN THIS CODE CHUNK library(nameofpackage)
+library(tidyverse)
+library(wooldridge) # To get our example's dataset 
+library(tidyverse) # To use dplyr functions and the pipe operator when needed
+library(ggplot2) # To visualize data (this package is also loaded by 
+library(stargazer)
+library(Hmisc)
+library(cobalt)
+library(modelsummary)
+library(kableExtra)
+library(gt)
+library(fixest)
+library(lmtest) # to gather our clustered standard errors - coeftest()
+library(plm)
+```
+
+### General guidelines
+
+- The expected submission output is an HTML file. Only HTML submissions will be graded.
+- Include all your text-based answers inside the `<div class = "answer">` tags. Failing to do so will result in point deductions.
+- Avoid printing unnecessary output, such as complete data frames. This will result in point deductions.
+- Make sure that you explicitly point to the estimand you are being asked for. For instance, if your model reports estimates of multiple parameters, select or highlight the one(s) you are asked to report in the output, or report it separately in the answer box.
+- Regression output should be presented in a report-worthy format, for example a well-formatted HTML table. There will be deductions if the results are presented as text console output (this includes `stargazer::stargazer(., type = "text")` and `texreg::texreg()`).
+- Round to no more than two decimal points (e.g., 0.60 instead of 0.595). 
+
+---
+
+### Task 1 - Effects of a provisional bike infrastructure on cycling uptake [10 points in total]
+
+The dataset `biking_df.csv` contains data\footnote{These are simulated data} collected from bicycle counters across 200 cities in the country of Gazorpazorp. The national government **randomly allocated** funds for municipalities to arrange pop-up bicycle lanes. You are heading the policy evaluation team at the Ministry of Transport. Your task is to assess whether, and to what extent, the provisional bicycling infrastructure affected cycling uptake in the municipalities. Here is a short description of the data:
+  
+Our dataset `biking_df`, contains the following information:
+
+- `ìd`: A unique number identifier for each of the municipalities
+- `treatment`: A binary variable that signals whether the municipality built the pop-up lanes
+- `pre_lanes`: The average daily bike counts in the municipality before the pop-up lanes were built
+- `post_lanes`: The average daily bike counts in the municipality after the pop-up lanes were built
+
+With these data, perform the following tasks:
+
+a) Create the `biking_df_long` version of the data frame using `tidyr::pivot_longer()` [1 point]
+
+```{r}
+biking_df <- read.csv("biking_df.csv")
+biking_df_long <- 
+  biking_df %>% # the wide format df
+  tidyr::pivot_longer(cols = c(pre_lane, post_lane), # both contain information about 
+  names_to = "period", # 
+   values_to = "bike_line") %>% #
+  dplyr::mutate(after_program = ifelse(period == "post_lane", 1, 0)) # 
+
+head(biking_df_long, 10)
+
+```
+
+b) Create a faceted density plot illustrating the distributions of the daily bike counts across time (pre-and post-lanes) and treatment groups (control and treated). [1 point]
+
+```{r}
+ggplot(biking_df, aes(x = pre_lane,fill = factor(treatment))) + 
+  geom_density(alpha = 0.5) + # density plot with transparency (alpha = 0.5)
+  scale_fill_manual(name = " ", # changes to fill dimension
+                     values = c("#a7a8aa", "#cc0055"),
+                     labels = c("Control", "Treatment")) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Distribution of daily bike accounts before the pop-up lanes were built",
+       x = "Average daily bike",
+       y = "Density")
+ggplot(biking_df, aes(x = post_lane, fill = factor(treatment))) + 
+  geom_density(alpha = 0.5) + # density plot with transparency (alpha = 0.5)
+  scale_fill_manual(name = " ", # changes to fill dimension
+                     values = c("#a7a8aa", "#cc0055"),
+                     labels = c("Control", "Treatment")) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Distribution of daily bike accounts after the pop-up lanes were built",
+       x = "Average daily bike",
+       y = "Density")
+```
+
+c) Ignore the time dimension and calculate a naïve estimate at the post-lanes period. **What do these results tell you? Interpret your estimate.** [1 point]
+
+```{r}
+naive_model <- lm(post_lane ~ treatment, data = biking_df)
+modelsummary(naive_model,
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE,output = "html")
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The model is telling us that on average daily bike lines are increased by 181.675 units when the municipality built the pop-up lanes, meaning that there is a positive effect of this implementation, however this a naive model and many other factors cna be affecting this relationship.
+</div>
+
+d) Create a 2x2 table across the time and treatment dimensions. With the values gathered from this table, manually extract the **diff-in-diff** estimate. *(You can use R as a calculator)*. [2 points]
+
+```{r}
+biking_df_long %>% 
+  dplyr::group_by(period, treatment) %>% #group by period and treatment
+  dplyr::summarize(bike_lines = mean(bike_line)) %>% #render averages
+  tidyr::pivot_wider(names_from = period, values_from = bike_lines) %>% #turn from long to wide
+  dplyr::select(treatment, pre_lane, post_lane) %>% # re-arrange variables
+  dplyr::arrange(desc(treatment)) %>%
+  dplyr::mutate(difference = post_lane - pre_lane) %>%
+  knitr::kable(col.names = c("Treatment", "Pre-lane", "Post-lane", "Difference"),
+               digits = 2) %>%
+  kableExtra::kable_styling(full_width = F) %>%
+  kableExtra::add_header_above(c("", "Period" = 2, "")) #add header for period
+
+did <- 292.81 - 177.96
+did
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+From the table above, it can be infer that the the average outcome of the municipalities how has receive funds for built pop_up lanes has changed the cycling uptake positive by 114.5 units in the period after the treatment, compared to what it would happened to the same municipalities if the intervention had not occurred. 
+</div> 
+
+e) Let's bring time into our considerations, create a `change` variable, and calculate the effect of the pop-up bike lanes via the **first differences on treatment indicator** method. **Interpret your estimate.** [1 point]
+
+```{r}
+biking_df <- biking_df %>%
+  dplyr::mutate(change = post_lane - pre_lane) #simple substraction
+
+did_model <- lm(change ~ treatment, data = biking_df)
+
+modelsummary(did_model, title = "First dif model",
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE,output = "html")
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+From the model above we can infer that those municipalities that were benefit by the funds provided by the government increase on average 114.845 the uptake cycling due to pop_up lanes bikes more than on the municipalities that were not benefit by the government.
+</div>
+
+f) With the `biking_long_df`, calculate the effect of the pop-up bike lanes via the **regression formulation of the DiD model** method. **Interpret your estimate. How is this different from the first differences on treatment indicator?** [2 points]
+
+```{r}
+dd_long <- lm(bike_line ~ treatment + after_program + treatment*after_program, data = biking_df_long) #running our model
+
+did_biking_df <- coeftest(dd_long, vcov=vcovHC(dd_long,type="HC0",cluster="district")) #clustering out standard errors at the district level
+modelsummary(did_biking_df, title="DiD model",
+ statistic = c("conf.int", 
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE,output = "html")
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The model above represents the did estimation, which gave us a more detail information regarding the other states and variables of the model on contrast of the previous one. For instance the intercept, represent the average uptake cycling of the municipalities before the treatment (269.261),meanwhile on average 66.830 uptake cycling  are the difference between the treatment and the control group before the treatment. Later on, when the program was already implemented, the difference  on average of the cycling uptake  between municipalities where 177.964 units. Finally, after the program considering the treatment the average outcome of the municipalities how has receive funds for built pop_up lanes has changed positive by 114.5 units on contrast of the group who were not benefit.
+</div>
+
+g) The Minister of transport will be meeting with the *Infrastructure and Mobility Committee* of Gazorpazorp. Make a brief policy recommendation based on your findings. *(No more than 5 sentences)*. [1 points]
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+Following the results above, is safe to say that the impact of the policy is positive meaning that the funds for municipalities to arrange pop-up bicycle lanes is  affecting the cycling uptake on average 114.5 units. That implies the policy is sucessful so far and can be implemented on a larger scale.
+</div>
+
+h) A colleague of yours points out that the allocation process was not fully random as the government had led you to believe. It appears that previous bike uptake trends were taken into account in the decision-making process. Mayors of municipalities where bike uptake had been steadily growing lobbied for priority access to the resources. **How would this change your evaluation of the program?** [1 point]
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+In this case if there is no random selection, then is possible that the final outcome of the benefit of the policy it was overestimated, in this case it would be necessary to run the model with a clean variable that doesn´t consider the previous uptake, or can be necessary to use another model for the estimation that can control for this effects.
+</div>
+
+---
+
+### Task 2 - Effects of tax incentives on unemployment claims [10 points in total]
+
+The dataset `unemployment_df.csv` contains data from 2010-2018 unemployment claims\footnote{These are simulated data} collected across the 20 cities in the State of New Tatooine. During this time period, some city government authorities put in place a tax incentive plan for employers/industry to stimulate economic growth and reduce unemployment in their cities.
+
+You are part the policy evaluation team at the Secretary of Finance of the State of New Tatooine. Your task is to assess whether, and to what extent, the tax incentives affected the number unemployment claims in the cities Here is a short description of the data:
+  
+Our dataset `unemployment_df`, contains the following information:
+
+- `city`: The name of the city
+- `region`: The name of the region within the State
+- `year`: The year of the entry
+- `claims`: The number of unemployment claims per 100,000 inhabitants
+- `tax_incentive`: A binary variable that signals whether the city had a tax incentive in place at the specific time of the entry
+
+
+With these data, perform the following tasks:
+
+a) Create a faceted graph showing the unemployment claim trajectories over time highlighting the `city` level with `facet_wrap()` [1 point]
+
+```{r}
+unemployment_df <- read_csv("unemployment_df.csv", show_col_types = FALSE)
+
+ggplot(unemployment_df, aes(x=year, y=claims)) + 
+  geom_line() +  theme(text = element_text(size=8))+
+  theme(legend.position = "none") +
+  labs(title="Unemployment claim trajectory over time by city",x = "Year",
+       y = "Number of unemployment claims per 100,000 inhabitants")+
+  facet_wrap(~city, scales="free")
+```
+
+
+b) Ignore the unit- and time-dimensions and calculate a naïve pooled estimate. **What do these results tell you? Interpret your estimate.** [1 point]
+
+```{r}
+model_1 <- lm(claims ~ tax_incentive, data = unemployment_df)
+modelsummary(model_1,
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE,output = "html")
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The model is telling that on average the number of unemployment claims per 100,000 persons are reduced by 509.311 in cities with tax incentive plan for employers/industry to stimulate economic growth and reduce unemployment in their cities in place. However there may be many factors that could be skewing the results of this regression.
+</div>
+
+c) Run a **unit-fixed effects** model *Feel free to use LSDV with `lm()` or the de-meaning approach with `plm()`.* How does the coefficient for the tax change in comparison to the pooled model? **What do these results tell you? Interpret your estimate.** [2 points]
+
+```{r}
+
+lsdv_model <- plm(claims ~ tax_incentive, 
+               data = unemployment_df, 
+               index = c("city"), # FE
+               effect = "individual", # unit
+               model = "within")
+
+modelsummary(lsdv_model,
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE,output = "html")
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+In the model above adding unit-level fixed effects, implies only focus on within-state variation, in this case implies that the imposition of a tax incentive affect significative and negative the unemployment claims by 642.277 units. 
+</div> 
+
+d) Run a **unit- and time-fixed effects** model using the **de-meaning** approach with `plm()`. **What do these results tell you? Interpret your estimate.** [2 points]
+
+```{r}
+model_unit_time <- plm(claims ~ tax_incentive, 
+               data = unemployment_df,  
+                    index = c("city", "year"), # unit and time
+                    model = "within", 
+                    effect = "twoways")
+modelsummary(model_unit_time,
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE,output = "html")
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+In the model above adding unit-level fixed effects plus time specific factors that can affect the tax incentive plan leave a more real result, in this case the result is not significative but suggest that the tax incentive plan leads to an increase of 7.646 the number of unemployment claims.
+</div>
+
+e) Run a **unit- and time-fixed effects** model using the **least-squares dummy variables (LSDV)** approach  with `lm()`. How is this model different from the "de-meaned" model from the previous point? [2 points]
+
+```{r}
+model_unit_time_2 <- lm(claims ~ tax_incentive + city + factor(year), 
+                        data = unemployment_df)
+modelsummary(model_unit_time_2,
+ statistic = c("conf.int",
+                           "s.e. = {std.error}", 
+                           "t = {statistic}",
+                           "p = {p.value}"),stars = TRUE,output = "html")
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+The difference between this model and model d), is that the results are read in reference to a baseline, also has more detail information of city specific and year. For instance the constant is representing the intercept for Archensheen city and 2010 year, on that line is safe to say that bellenau citizens emit on average 734.811 unemployment claims than Archensheen citizens. Moreover, in 2018 has the biggest significative difference (1008.968 ) on unemployment claims in contrast to 2010.
+</div>
+
+f) Using the LSDV **unit- and time-fixed effects** model: What is the average expected difference in unemployment claims between the cities of Minetown and Dark Meadow holding the year and treatment state constant. [1 point]
+
+```{r}
+
+fixedef<- fixef (model_unit_time)
+summary(fixedef)
+Dif_m_dw<-4485.3451 - 1236.3674
+Dif_m_dw
+
+
+```
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+After extracting the fixed effect coefficients of the variable is safe to say that the average expected difference in unemployment claims between Minetown city and Dark Meadow city is 3248.98 units holding year and treatmenr state constant.
+</div>
+
+g) Briefly discuss, why the results **unit- and time-fixed effects** differ from the rest. **What do we expect could be biasing the results from the pooled and unit-fixed effects models?** [1 point]
+
+<!-- DO NOT FORGET TO PUT YOUR ANSWER IN THE TAG DOWN THERE -->
+
+<div class = "answer"> 
+It is very likely that the initial results were bias and seemed significative and positive because they were considering the observations of all the years, and is possible that within the year the tax policy were change it in different cities, so it makes difficult to track the result in this particular case.
+</div>
+
+---
+
+### Task 3 - Statistics inspired meme [1 bonus percentage point]
+
+a)  Create a stats-inspired meme using `memer` (or any other R meme dedicated  package) to earn one bonus percentage point. The meme should be related to one of the topics covered in the sessions this assignment is based on.
+
+```{r}
+
+library (memer)
+meme_get("OprahGiveaway") %>%
+  meme_text_bottom("You get a regressionm \n everyone gets a regression ")
+```
+
