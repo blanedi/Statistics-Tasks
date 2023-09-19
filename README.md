@@ -17,7 +17,7 @@ This repository contains a series of assignments that focus on various statistic
 
 ## 02-Assignment: The Backdoor Criterion, Regression, and Matching
 
-- **Folder**: `02-assignment`
+- **Folder**: [02-assignment](./02-assignment)
 - **Topics Covered**: Causal Graphs, Smoking Behavior & Infant Birth Weight, Child Soldiering, Causal Graph Simulation
 - **Key Tasks**:
   - Reproduce and interpret a causal graph.
@@ -28,7 +28,7 @@ This repository contains a series of assignments that focus on various statistic
 
 ## 03-Assignment: Instrumental Variables & Regression Discontinuity Designs
 
-- **Folder**: `03-assignment`
+- **Folder**: [03-assignment](./03-assignment)
 - **Topics Covered**: Instrumental Variables, Regression Discontinuity Designs
 - **Datasets**: `sesame_df.dta`, `hospitals.tsv`
 - **Key Tasks**:
@@ -38,7 +38,7 @@ This repository contains a series of assignments that focus on various statistic
 
 ## 04-Assignment: Difference-in-differences, Panel Data, and Fixed Effects
 
-- **Folder**: `04-assignment`
+- **Folder**: [04-assignment](./04-assignment)
 - **Topics Covered**: Difference-in-differences, Panel Data, Fixed Effects
 - **Datasets**: `biking_df.csv`, `unemployment_df.csv`
 - **Key Tasks**:
