@@ -2,7 +2,7 @@
 
 # General Overview of Assignments
 
-This repository contains a series of assignments for advanced statistics from [Hertie School(Berlin, Germany)](https://www.hertie-school.org/en/mpp) that focus on various statistical and analytical methods to understand the effects of different treatments on outcomes. The analysis is conducted using R and covers a range of topics including the Potential Outcomes Framework, backdoor criterion, regression, matching, instrumental variables, regression discontinuity designs, difference-in-differences, panel data, and fixed effects.
+This repository contains a series of assignments for advanced statistics from [Hertie School (Berlin, Germany)](https://www.hertie-school.org/en/mpp) that focus on various statistical and analytical methods to understand the effects of different treatments on outcomes. The analysis is conducted using R and covers a range of topics including the Potential Outcomes Framework, backdoor criterion, regression, matching, instrumental variables, regression discontinuity designs, difference-in-differences, panel data, and fixed effects.
 
 ## 01-Assignment: Analysis of Potential Outcomes and Treatment Effects
 
