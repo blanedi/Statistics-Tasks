@@ -6,7 +6,7 @@ This repository contains a series of assignments that focus on various statistic
 
 ## 01-Assignment: Analysis of Potential Outcomes and Treatment Effects
 
-- **Folder**: `01-assignment`
+- **Folder**: [01-assignment](./01-assignment)
 - **Topics Covered**: Potential Outcomes Framework
 - **Datasets**: `earnings_df.dta`, `animals_df.csv`
 - **Key Tasks**:
